@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивный План Обучения: Frontend Mastery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Slate (Neutrals) + Indigo (Primary) + Emerald (Success) -->
+    <!-- Application Structure Plan: The SPA uses a dashboard layout with a persistent sidebar for navigation and a main content area. This allows the user to logically progress through the curriculum without losing context of their overall journey. A progress chart acts as a central motivational anchor. Each module contains actionable checkboxes and curated external links, transforming a static curriculum list into an interactive, trackable learning tool. -->
+    <!-- Visualization & Content Choices: 
+         1. Doughnut Chart (Chart.js): Displays overall progress. Chosen over a progress bar for a more engaging, "dashboard" feel. Interaction: Updates dynamically when topics are checked.
+         2. Interactive List (HTML/JS): Displays module topics with checkboxes and links. Chosen for readability and actionable tracking. Interaction: Checkboxes trigger state updates.
+         3. Dynamic Content Rendering: Avoids page reloads, keeping the user immersed in their learning flow. NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .chart-container { position: relative; width: 100%; max-width: 250px; margin: 0 auto; height: 250px; max-height: 250px; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="text-slate-800 antialiased h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <aside class="w-full md:w-72 bg-white border-r border-slate-200 flex flex-col h-auto md:h-full z-10 shadow-sm flex-shrink-0">
+        <div class="p-6 border-b border-slate-100">
+            <h1 class="text-2xl font-bold text-indigo-700 tracking-tight">Frontend<span class="text-slate-800">Mastery</span></h1>
+            <p class="text-sm text-slate-500 mt-1">Твой путь от базы до оффера</p>
+        </div>
+        <nav id="sidebar-nav" class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-2 flex flex-row md:flex-col gap-2 md:gap-0 overflow-x-auto md:overflow-x-hidden">
+        </nav>
+        <div class="p-4 border-t border-slate-100 bg-slate-50 hidden md:block">
+            <div class="text-xs text-slate-500 text-center">Проходи модули последовательно. Отмечай выполненное.</div>
+        </div>
+    </aside>
+
+    <main class="flex-1 h-full overflow-y-auto bg-slate-50">
+        <div class="max-w-5xl mx-auto p-4 md:p-8">
+            
+            <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center gap-8">
+                <div class="flex-1">
+                    <h2 class="text-3xl font-bold mb-3">Привет! Готов стать Frontend-разработчиком? 🚀</h2>
+                    <p class="text-slate-600 mb-4 leading-relaxed">
+                        Этот интерактивный план составлен на основе программы, которую ты прислал. Я разбил её на логические модули, добавил нулевой модуль (основы JS, без которых никуда), и подобрал <strong>лучшие бесплатные материалы</strong> (в основном на русском, плюс официальные доки) для каждой темы.
+                    </p>
+                    <p class="text-slate-600 leading-relaxed">
+                        Изучай материалы по ссылкам, практикуйся в написании кода и отмечай галочками пройденные темы. Твой прогресс будет отображаться на графике справа.
+                    </p>
+                </div>
+                <div class="chart-container bg-slate-50 rounded-full p-4 shadow-inner">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </header>
+
+            <section id="module-content" class="bg-white rounded-2xl shadow-sm border border-slate-200 min-h-[400px]">
+            </section>
+            
+        </div>
+    </main>
+
+    <script>
+        const roadmapData = [
+            {
+                id: 'm0',
+                title: 'Модуль 0: Продвинутый JS',
+                icon: '🟨',
+                description: 'Перед тем как идти в React и TypeScript, нужно железно знать как работает базовый JavaScript. Это фундамент.',
+                topics: [
+                    { 
+                        id: 'm0-1', name: 'Event Loop, Callbacks, Promises, async/await', 
+                        links: [{ url: 'https://learn.javascript.ru/async', text: 'Учебник JS: Асинхронность' }, { url: 'https://doka.guide/js/event-loop/', text: 'Doka: Event Loop' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm0-2', name: 'Замыкания (Closures) и Область видимости', 
+                        links: [{ url: 'https://learn.javascript.ru/closure', text: 'Учебник JS: Замыкания' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm0-3', name: 'Контекст (this) и методы массивов', 
+                        links: [{ url: 'https://learn.javascript.ru/object-methods', text: 'Учебник JS: Методы объекта и this' }, { url: 'https://doka.guide/js/array-methods/', text: 'Doka: Методы массивов' }],
+                        completed: false 
+                    }
+                ]
+            },
+            {
+                id: 'm1',
+                title: 'Модуль 1: TypeScript',
+                icon: '📘',
+                description: 'TypeScript добавляет строгую типизацию в JS. Это стандарт современной разработки. Учит писать безопасный код.',
+                topics: [
+                    { 
+                        id: 'm1-1', name: 'Базовые типы (String, Number, Boolean, Arrays, Any, Unknown)', 
+                        links: [{ url: 'https://www.typescriptlang.org/ru/docs/handbook/2/everyday-types.html', text: 'Оф. документация TS' }, { url: 'https://doka.guide/tools/typescript/', text: 'Doka: Что такое TS' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm1-2', name: 'Интерфейсы (Interfaces) и Типы (Types)', 
+                        links: [{ url: 'https://learn.javascript.ru/typescript-interfaces', text: 'Основы интерфейсов' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm1-3', name: 'Enums (Перечисления)', 
+                        links: [{ url: 'https://www.typescriptlang.org/docs/handbook/enums.html', text: 'TS Enums (ENG)' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm1-4', name: 'Generics (Дженерики)', 
+                        links: [{ url: 'https://habr.com/ru/articles/556150/', text: 'Habr: Дженерики простым языком' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm1-5', name: 'Классы в TypeScript', 
+                        links: [{ url: 'https://www.typescriptlang.org/docs/handbook/2/classes.html', text: 'TS Classes (ENG)' }],
+                        completed: false 
+                    }
+                ]
+            },
+            {
+                id: 'm2',
+                title: 'Модуль 2: React',
+                icon: '⚛️',
+                description: 'Самая популярная библиотека для создания пользовательских интерфейсов. Фокус на функциональных компонентах и хуках.',
+                topics: [
+                    { 
+                        id: 'm2-1', name: 'Базовые хуки: useState, useEffect, useRef', 
+                        links: [{ url: 'https://react.dev/learn', text: 'React Docs (Новая дока, лучшая)' }, { url: 'https://doka.guide/js/react-and-state/', text: 'Doka: Состояние в React' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm2-2', name: 'Оптимизация: useMemo, useCallback', 
+                        links: [{ url: 'https://react.dev/reference/react/useMemo', text: 'React Docs: useMemo' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm2-3', name: 'Кастомные хуки (Custom hooks)', 
+                        links: [{ url: 'https://react.dev/learn/reusing-logic-with-custom-hooks', text: 'React Docs: Custom Hooks' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm2-4', name: 'Context API (Управление состоянием)', 
+                        links: [{ url: 'https://react.dev/learn/passing-data-deeply-with-context', text: 'React Docs: Context' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm2-5', name: 'HOCs (High Order Components) - Устаревает, но спрашивают', 
+                        links: [{ url: 'https://ru.legacy.reactjs.org/docs/higher-order-components.html', text: 'Legacy React Docs: HOC' }],
+                        completed: false 
+                    }
+                ]
+            },
+            {
+                id: 'm3',
+                title: 'Модуль 3: Redux Toolkit',
+                icon: '🗃️',
+                description: 'Продвинутый стейт-менеджер. RTK - это современный стандарт написания Redux кода, убирающий много шаблона.',
+                topics: [
+                    { 
+                        id: 'm3-1', name: 'Настройка Store и создание Slices', 
+                        links: [{ url: 'https://redux-toolkit.js.org/tutorials/quick-start', text: 'Оф. туториал RTK' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm3-2', name: 'Асинхронные действия (Async Thunks)', 
+                        links: [{ url: 'https://redux-toolkit.js.org/api/createAsyncThunk', text: 'RTK: createAsyncThunk' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm3-3', name: 'RTK Query (Работа с API)', 
+                        links: [{ url: 'https://redux-toolkit.js.org/rtk-query/overview', text: 'Оф. дока RTK Query' }, { url: 'https://habr.com/ru/articles/707014/', text: 'Habr: RTK Query просто' }],
+                        completed: false 
+                    }
+                ]
+            },
+            {
+                id: 'm4',
+                title: 'Модуль 4: Next.js',
+                icon: '▲',
+                description: 'Фреймворк поверх React для SSR, SEO и быстрой маршрутизации. Очень востребован сейчас.',
+                topics: [
+                    { 
+                        id: 'm4-1', name: 'Pages Router vs App Router (Различия)', 
+                        links: [{ url: 'https://nextjs.org/learn', text: 'Оф. интерактивный курс Next.js (Must do!)' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm4-2', name: 'Рендеринг: SSR, SSG, ISR', 
+                        links: [{ url: 'https://habr.com/ru/articles/538740/', text: 'Habr: Разница между SSR, SSG, CSR' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm4-3', name: 'API Routes (Создание своего бекенда)', 
+                        links: [{ url: 'https://nextjs.org/docs/pages/building-your-application/routing/api-routes', text: 'Next.js API Routes' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm4-4', name: 'Middleware (Промежуточное ПО)', 
+                        links: [{ url: 'https://nextjs.org/docs/app/building-your-application/routing/middleware', text: 'Next.js Middleware' }],
+                        completed: false 
+                    }
+                ]
+            },
+            {
+                id: 'm5',
+                title: 'Модуль 5: Тестирование',
+                icon: '🧪',
+                description: 'Умение писать тесты отличает джуна от мидла. Автоматическая проверка работоспособности кода.',
+                topics: [
+                    { 
+                        id: 'm5-1', name: 'Основы Unit тестов и Jest', 
+                        links: [{ url: 'https://jestjs.io/ru/docs/getting-started', text: 'Документация Jest' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm5-2', name: 'React Testing Library', 
+                        links: [{ url: 'https://testing-library.com/docs/react-testing-library/intro/', text: 'Оф. дока RTL' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm5-3', name: 'E2E Тестирование (Cypress / Playwright - основы)', 
+                        links: [{ url: 'https://docs.cypress.io/guides/overview/why-cypress', text: 'Cypress Docs' }],
+                        completed: false 
+                    }
+                ]
+            },
+            {
+                id: 'm6',
+                title: 'Модуль 6: Advanced Frontend',
+                icon: '🚀',
+                description: 'Продвинутые браузерные API и оптимизация для создания сложных веб-приложений.',
+                topics: [
+                    { 
+                        id: 'm6-1', name: 'WebSockets (Двустороннее общение в реальном времени)', 
+                        links: [{ url: 'https://learn.javascript.ru/websocket', text: 'Учебник JS: WebSockets' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm6-2', name: 'Web Workers & Service Workers (Многопоточность и оффлайн)', 
+                        links: [{ url: 'https://learn.javascript.ru/fetch-crossorigin', text: 'Основы CORS и Workers на MDN' }, { url: 'https://developer.mozilla.org/ru/docs/Web/API/Service_Worker_API/Using_Service_Workers', text: 'MDN: Service Workers' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm6-3', name: 'Оптимизация производительности (Performance)', 
+                        links: [{ url: 'https://web.dev/learn/performance/', text: 'Курс от Google web.dev (ENG)' }],
+                        completed: false 
+                    }
+                ]
+            },
+            {
+                id: 'm7',
+                title: 'Модуль 7: Подготовка к Собеседованиям',
+                icon: '🎯',
+                description: 'Финальный этап. Набивка руки на алгоритмах и заучивание теории для успешного прохождения интервью.',
+                topics: [
+                    { 
+                        id: 'm7-1', name: 'Основы алгоритмов (Массивы, Строки, Хэш-таблицы)', 
+                        links: [{ url: 'https://leetcode.com/', text: 'Тренировка: LeetCode' }, { url: 'https://admx.dev/blog/leetcode-for-frontend', text: 'Статья: LeetCode для Фронтендера' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm7-2', name: 'Частые вопросы по JS, React, HTML/CSS', 
+                        links: [{ url: 'https://github.com/YauhenKavalchuk/interview-questions', text: 'GitHub: Огромный сборник вопросов (RU)' }, { url: 'https://frontend-interview-handbook.vercel.app/', text: 'Frontend Interview Handbook (ENG)' }],
+                        completed: false 
+                    },
+                    { 
+                        id: 'm7-3', name: 'Мок-интервью (Публичные собесы на YouTube)', 
+                        links: [{ url: 'https://www.youtube.com/results?search_query=%D0%BF%D1%83%D0%B1%D0%BB%D0%B8%D1%87%D0%BD%D0%BE%D0%B5+%D1%81%D0%BE%D0%B1%D0%B5%D1%81%D0%B5%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5+react', text: 'Поиск на YouTube: Публичные собесы React' }],
+                        completed: false 
+                    }
+                ]
+            }
+        ];
+
+        let currentModuleId = roadmapData[0].id;
+        let progressChartInstance = null;
+
+        function loadState() {
+            const saved = localStorage.getItem('frontendRoadmapState');
+            if (saved) {
+                const completedIds = JSON.parse(saved);
+                roadmapData.forEach(mod => {
+                    mod.topics.forEach(topic => {
+                        if (completedIds.includes(topic.id)) {
+                            topic.completed = true;
+                        }
+                    });
+                });
+            }
+        }
+
+        function saveState() {
+            const completedIds = [];
+            roadmapData.forEach(mod => {
+                mod.topics.forEach(topic => {
+                    if (topic.completed) completedIds.push(topic.id);
+                });
+            });
+            localStorage.setItem('frontendRoadmapState', JSON.stringify(completedIds));
+        }
+
+        function calculateProgress() {
+            let total = 0;
+            let completed = 0;
+            roadmapData.forEach(mod => {
+                mod.topics.forEach(topic => {
+                    total++;
+                    if (topic.completed) completed++;
+                });
+            });
+            return { completed, total, percentage: Math.round((completed / total) * 100) };
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            const { completed, total } = calculateProgress();
+            
+            progressChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Изучено', 'Осталось'],
+                    datasets: [{
+                        data: [completed, total - completed],
+                        backgroundColor: ['#10b981', '#cbd5e1'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.label + ': ' + context.raw + ' тем';
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'textCenter',
+                    beforeDraw: function(chart) {
+                        var width = chart.width,
+                            height = chart.height,
+                            ctx = chart.ctx;
+
+                        ctx.restore();
+                        var fontSize = (height / 114).toFixed(2);
+                        ctx.font = "bold " + fontSize + "em Inter, sans-serif";
+                        ctx.textBaseline = "middle";
+                        ctx.fillStyle = "#1e293b";
+
+                        var text = calculateProgress().percentage + "%",
+                            textX = Math.round((width - ctx.measureText(text).width) / 2),
+                            textY = height / 2;
+
+                        ctx.fillText(text, textX, textY);
+                        ctx.save();
+                    }
+                }]
+            });
+        }
+
+        function updateChart() {
+            const { completed, total } = calculateProgress();
+            if (progressChartInstance) {
+                progressChartInstance.data.datasets[0].data = [completed, total - completed];
+                progressChartInstance.update();
+            }
+        }
+
+        function renderNavigation() {
+            const nav = document.getElementById('sidebar-nav');
+            nav.innerHTML = '';
+            
+            roadmapData.forEach(mod => {
+                const btn = document.createElement('button');
+                const isSelected = mod.id === currentModuleId;
+                
+                let modCompleted = 0;
+                mod.topics.forEach(t => { if(t.completed) modCompleted++; });
+                const isAllDone = modCompleted === mod.topics.length && mod.topics.length > 0;
+
+                btn.className = `w-full text-left px-4 py-3 rounded-xl transition-all duration-200 flex items-center gap-3 md:min-w-0 min-w-[200px] border ${isSelected ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-transparent border-transparent hover:bg-slate-50'}`;
+                btn.onclick = () => {
+                    currentModuleId = mod.id;
+                    renderNavigation();
+                    renderModuleContent();
+                };
+
+                btn.innerHTML = `
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg ${isSelected ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'} ${isAllDone ? 'bg-emerald-100 text-emerald-600' : ''}">
+                        ${isAllDone ? '✓' : mod.icon}
+                    </div>
+                    <div class="flex-1 overflow-hidden">
+                        <div class="font-medium truncate ${isSelected ? 'text-indigo-800' : 'text-slate-700'} ${isAllDone ? 'text-emerald-700' : ''}">${mod.title}</div>
+                        <div class="text-xs text-slate-400 mt-0.5">${modCompleted} из ${mod.topics.length} пройдено</div>
+                    </div>
+                `;
+                nav.appendChild(btn);
+            });
+        }
+
+        function toggleTopic(topicId) {
+            roadmapData.forEach(mod => {
+                mod.topics.forEach(topic => {
+                    if (topic.id === topicId) {
+                        topic.completed = !topic.completed;
+                    }
+                });
+            });
+            saveState();
+            renderNavigation();
+            renderModuleContent();
+            updateChart();
+        }
+
+        function renderModuleContent() {
+            const container = document.getElementById('module-content');
+            const mod = roadmapData.find(m => m.id === currentModuleId);
+            
+            if (!mod) return;
+
+            let topicsHtml = mod.topics.map((topic, index) => {
+                let linksHtml = topic.links.map(link => 
+                    `<a href="${link.url}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 text-sm rounded-full transition-colors border border-slate-200">
+                        🔗 ${link.text}
+                    </a>`
+                ).join('');
+
+                return `
+                    <div class="p-4 md:p-6 border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors flex flex-col md:flex-row gap-4 items-start">
+                        <div class="pt-1">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" class="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer transition-all" 
+                                    ${topic.completed ? 'checked' : ''} 
+                                    onchange="toggleTopic('${topic.id}')">
+                            </label>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold ${topic.completed ? 'text-slate-400 line-through' : 'text-slate-800'} mb-3">
+                                ${index + 1}. ${topic.name}
+                            </h3>
+                            <div class="flex flex-wrap gap-2">
+                                ${linksHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="p-6 md:p-8 border-b border-slate-200 bg-indigo-50/30 rounded-t-2xl fade-in">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-3xl">${mod.icon}</span>
+                        <h2 class="text-2xl font-bold text-slate-800">${mod.title}</h2>
+                    </div>
+                    <p class="text-slate-600 leading-relaxed max-w-3xl">${mod.description}</p>
+                </div>
+                <div class="fade-in">
+                    ${topicsHtml}
+                </div>
+            `;
+        }
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            initChart();
+            renderNavigation();
+            renderModuleContent();
+        });
+
+    </script>
+</body>
+</html>
